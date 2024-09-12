@@ -4,14 +4,10 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-#if UNITY_EDITOR
 using UnityEditor;
-#endif
+using UnityEngine;
 
-namespace MyHierarchy
+namespace Components
 {
     [System.Serializable]
     public class MyHierarchyHeader : MonoBehaviour
@@ -24,7 +20,7 @@ namespace MyHierarchy
         [MenuItem("GameObject/My Hierarchy/Header", false, 10)]
         public static void CreateHeader(MenuCommand menu)
         {
-            GameObject go = new GameObject();
+            var go = new GameObject();
             go.AddComponent<MyHierarchyHeader>();
             GameObjectUtility.SetParentAndAlign(go, menu.context as GameObject);
             Undo.RegisterCreatedObjectUndo(go, "Created MyHierarchy GO: " + go.name);
@@ -46,11 +42,13 @@ namespace MyHierarchy
     {
         public override void OnInspectorGUI()
         {
-            GUIStyle gs = new GUIStyle(EditorStyles.helpBox);
-            gs.fontStyle = FontStyle.Bold;
-            gs.alignment = TextAnchor.MiddleCenter;
-            gs.fontSize = 13;
-            Color color = Color.yellow * 0.85f;
+            var gs = new GUIStyle(EditorStyles.helpBox)
+            {
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter,
+                fontSize = 13
+            };
+            var color = Color.yellow * 0.85f;
             SetFontColor_AllStates(gs, new Color(color.r, color.g, color.b, 1));
             SetBackground_AllStates(gs, CreateTexture_2x2(new Color(0.25f, 0.25f, 0.25f, 1)));
 
@@ -69,6 +67,7 @@ namespace MyHierarchy
             EditorGUILayout.Space(5);
 
             EditorGUILayout.LabelField("Created By: (╯°□°)╯︵ INF", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Refactored By: RunaXR", EditorStyles.boldLabel);
         }
 
         public GUIStyle SetBackground_AllStates(GUIStyle style, Texture2D texture)
@@ -89,10 +88,10 @@ namespace MyHierarchy
 
         public Texture2D CreateTexture_2x2(Color color)
         {
-            Texture2D texture = new Texture2D(4, 4, TextureFormat.RGBA32, false);
+            var texture = new Texture2D(4, 4, TextureFormat.RGBA32, false);
             
-            for (int i = 0; i < texture.width; i++) {
-                for (int j = 0; j < texture.height; j++) {
+            for (var i = 0; i < texture.width; i++) {
+                for (var j = 0; j < texture.height; j++) {
                     texture.SetPixel(i,j, color);
                 }
             }

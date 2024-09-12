@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3d9600ece5eee224f92be46dd145036c, type: 3}
   m_Name: My Hierarchy Settings
   m_EditorClassIdentifier: 
-  showLayers: 1
-  showTags: 1
+  showLayers: 0
+  showTags: 0
   showStaticObjects: 0
   showDepth: 1
   activate: 1
@@ -21,7 +21,7 @@ MonoBehaviour:
   showRelationshipLines: 1
   highlightSelectedSiblings: 1
   highlightSelectedChildren: 1
-  showComponents: 1
+  showComponents: 0
   hideIconlessComponents: 1
   headerFontStyle: 1
   headerAlignment: 1

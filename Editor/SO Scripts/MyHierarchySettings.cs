@@ -4,18 +4,10 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-using System.Collections;
-using System.Collections.Generic;
+using Editor.Core;
 using UnityEngine;
-#if UNITY_EDITOR
-    using UnityEditor;
-    using EGL = UnityEditor.EditorGUILayout;
-    using GL = UnityEngine.GUILayout;
-    using EG = UnityEditor.EditorGUI;
-    using EditorScriptingRageAndFrustrationMitigator;
-#endif
 
-namespace MyHierarchy
+namespace Editor.SO_Scripts
 {
     // [CreateAssetMenu(fileName = "My Hierarchy Settings", menuName = "My Hierarchy Settings", order = 0)]
     public class MyHierarchySettings : ScriptableObject {

@@ -4,37 +4,29 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
 using System;
-#if UNITY_EDITOR
+using System.Globalization;
+using Components;
+using Editor.SO_Scripts;
 using UnityEditor;
-using EditorScriptingRageAndFrustrationMitigator;
-#endif
+using UnityEngine;
 
-namespace MyHierarchy
+namespace Editor.Core
 {
     public enum Alignment { Left, Center, Right }
     public static class AlignmentExtensionMethods
     {
         public static TextAnchor ToTextAnchor(this Alignment alignment)
         {
-          TextAnchor anchor = default;
-          switch (alignment)
-          {
-            case Alignment.Left:
-              anchor = TextAnchor.MiddleLeft;
-              break;
-            case Alignment.Center:
-              anchor = TextAnchor.MiddleCenter;
-              break;
-            case Alignment.Right:
-              anchor = TextAnchor.MiddleRight;
-              break;
-          }
+            var anchor = alignment switch
+            {
+                Alignment.Left => TextAnchor.MiddleLeft,
+                Alignment.Center => TextAnchor.MiddleCenter,
+                Alignment.Right => TextAnchor.MiddleRight,
+                _ => default
+            };
 
-          return anchor;
+            return anchor;
         }
     }
 
@@ -63,84 +55,85 @@ namespace MyHierarchy
         private const int ParentToChildVerticalLineYPosAddition = 7;
         private const int DividerLineWidth = 1;
         private const float DividerLineSpaceFromLabel = 4;
-        private static readonly Vector2 staticIndicatorSize = new Vector2(8, 8);
+        private static readonly Vector2 StaticIndicatorSize = new(8, 8);
         // private const float LabelFixedWidth = 60;
         private const float GameObjectHierarchyItemIconWidth = 15;
         private const float IconToGroupHeaderLabelSpace = 3;
-        private static readonly Color ToGameobjectItemLineColor_Unselected = new Color(0.5f, 0.5f, 0.5f, 1);
-        private static readonly Color ToGameobjectItemLineColor_Selected = new Color(0.85f, 0.85f, 0.85f, 1);
-        private static readonly Color SameParentLineColor_InActive = new Color(0.5f, 0.5f, 0.5f, 0.5f);
-        private static readonly Color SameParentLineColor_Active = Color.yellow * 0.9f;
+        private static readonly Color ToGameobjectItemLineColorUnselected = new(0.5f, 0.5f, 0.5f, 1);
+        private static readonly Color ToGameobjectItemLineColorSelected = new(0.85f, 0.85f, 0.85f, 1);
+        private static readonly Color SameParentLineColorInActive = new(0.5f, 0.5f, 0.5f, 0.5f);
+        private static readonly Color SameParentLineColorActive = Color.yellow * 0.9f;
         private const float SameParentLineYMargin = 1.5f;
         private const float SameParentLineLeftShift = 14f;
-        private static int SelectedObjectItemDepth = -1;
-        private static bool IsCurrentlyDrawingSelectedObject = false;
-        private static bool IsSelectedObjectChild = false;
+        private static int _selectedObjectItemDepth = -1;
+        private static bool _isCurrentlyDrawingSelectedObject;
+        private static bool _isSelectedObjectChild;
         private static readonly Color DividerLineColor = Color.gray;
-        private static readonly Color NonStaticColor = new Color(0, 0.75f, 0, 1);
-        private static readonly Color StaticColor = new Color(0.4f, 0.4f, 0.4f, 1);
-        private static readonly Color ComponentIconBackgroundColor = new Color(0.3f, 0.3f, 0.3f, 1);
-        private static readonly Color inactiveObjectColorTint = new Color(0f, 0f, 0f, 0.3f);
+        private static readonly Color NonStaticColor = new(0, 0.75f, 0, 1);
+        private static readonly Color StaticColor = new(0.4f, 0.4f, 0.4f, 1);
+        private static readonly Color ComponentIconBackgroundColor = new(0.3f, 0.3f, 0.3f, 1);
+        private static readonly Color InactiveObjectColorTint = new(0f, 0f, 0f, 0.3f);
 
         /// <summary>
         /// Checks if parent of the selected object is the parent of this game object thus checking this gameobject is a sibling of the current selected gameobject
         /// </summary>
-        private static bool IsSiblingOfSelectedObject = false;
-        private static bool HasNextSibling = false; 
-        private static MyHierarchySettings settings;
+        private static bool _isSiblingOfSelectedObject;
+        private static bool _hasNextSibling; 
+        private static MyHierarchySettings _settings;
 
         static HierarchyRenderer() => EditorApplication.hierarchyWindowItemOnGUI += OnGameObjectItemRender;
-        static void OnGameObjectItemRender(int instanceID, Rect selectionRect)
+
+        private static void OnGameObjectItemRender(int instanceID, Rect selectionRect)
         {
-            bool isHeaderGroup = false;
-            IsCurrentlyDrawingSelectedObject = false;
-            IsSelectedObjectChild = false;
-            HasNextSibling = false;
+            var isHeaderGroup = false;
+            _isCurrentlyDrawingSelectedObject = false;
+            _isSelectedObjectChild = false;
+            _hasNextSibling = false;
 
-            if (settings == null)
-                settings = GetAsset_SO<MyHierarchySettings>("MyHierarchySettings", "My Hierarchy Settings");
+            if (_settings == null)
+                _settings = GetAsset_SO<MyHierarchySettings>("MyHierarchySettings", "My Hierarchy Settings");
 
-            if (!settings.activate)
+            if (!_settings.activate)
                 return;
 
-            GameObject go = (GameObject)EditorUtility.InstanceIDToObject(instanceID);
+            var go = (GameObject)EditorUtility.InstanceIDToObject(instanceID);
             if (go == null)
                 return;
 
-            GameObject selectedGO = Selection.activeGameObject; 
+            var selectedGo = Selection.activeGameObject; 
 
-            if (selectedGO != null){
-                if (selectedGO.scene.IsValid()) // check if the selected go is from the hierarchy
+            if (selectedGo != null){
+                if (selectedGo.scene.IsValid()) // check if the selected go is from the hierarchy
                 {
-                    if (selectedGO == go )
-                        IsCurrentlyDrawingSelectedObject = true;
+                    if (selectedGo == go )
+                        _isCurrentlyDrawingSelectedObject = true;
 
                     if (go.transform.IsChildOf(Selection.activeGameObject.transform))
-                        IsSelectedObjectChild = true;
+                        _isSelectedObjectChild = true;
 
-                    if ( selectedGO.transform.parent != null && go.transform.IsChildOf(selectedGO.transform.parent))
-                        IsSiblingOfSelectedObject = true;
+                    if ( selectedGo.transform.parent != null && go.transform.IsChildOf(selectedGo.transform.parent))
+                        _isSiblingOfSelectedObject = true;
                     else {
-                        IsSiblingOfSelectedObject = false;
+                        _isSiblingOfSelectedObject = false;
                     }
                 }
             }
             else
             {
-                SelectedObjectItemDepth = -1;
-                IsSiblingOfSelectedObject = false;
+                _selectedObjectItemDepth = -1;
+                _isSiblingOfSelectedObject = false;
             }
 
             if (go.transform.parent != null)
-                HasNextSibling = go.transform.GetSiblingIndex() != go.transform.parent.childCount-1;
+                _hasNextSibling = go.transform.GetSiblingIndex() != go.transform.parent.childCount-1;
 
-            if (go.TryGetComponent<MyHierarchyHeader>(out MyHierarchyHeader header))
+            if (go.TryGetComponent<MyHierarchyHeader>(out var header))
             {
                 DrawHeader(header, selectionRect, go.transform);
                 return;
             }
 
-            if (go.TryGetComponent<MyHierarchyGroup>(out MyHierarchyGroup group)){
+            if (go.TryGetComponent<MyHierarchyGroup>(out var group)){
                 isHeaderGroup = true;
                 DrawGroupHeader(selectionRect, go.name, group, go.activeSelf);
             }
@@ -149,19 +142,19 @@ namespace MyHierarchy
             if (selectionRect.xMin > HierarchyRootItemXMin)
                 DrawObjectRelationshipLines(selectionRect, go.transform);
 
-            if (settings.showComponents)
+            if (_settings.showComponents)
                 DrawComponents(selectionRect, go.transform, isHeaderGroup);
 
-            if (isHeaderGroup && !settings.showLabelsOnGroup)
+            if (isHeaderGroup && !_settings.showLabelsOnGroup)
                 return;
 
-            if (settings.showStaticObjects)
+            if (_settings.showStaticObjects)
                 DrawIsStaticLabel(selectionRect, go.isStatic);
 
-            if (settings.showLayers)
+            if (_settings.showLayers)
                 DrawLayerLabel(selectionRect, go.layer);
 
-            if (settings.showTags)
+            if (_settings.showTags)
                 DrawTagLabel(selectionRect, go.tag);
 
             // DrawRectXMax(selectionRect);
@@ -172,10 +165,10 @@ namespace MyHierarchy
 
         private static void DrawObjectRelationshipLines( Rect rect, Transform goTransform )
         {
-            if (settings.showRelationshipLines) {
-                Color color = IsSelectedObjectChild && settings.highlightSelectedChildren 
-                ? ToGameobjectItemLineColor_Selected 
-                : ToGameobjectItemLineColor_Unselected;
+            if (_settings.showRelationshipLines) {
+                var color = _isSelectedObjectChild && _settings.highlightSelectedChildren 
+                ? ToGameobjectItemLineColorSelected 
+                : ToGameobjectItemLineColorUnselected;
 
                 DrawVerticalLine(rect, color);
                 DrawHorizontalLine(rect, goTransform.childCount > 0, color);
@@ -189,50 +182,59 @@ namespace MyHierarchy
         private static float GetAllLabelsXMin(Rect rect)
         {
             float dividerSpaceMultiplier = 0;
-            dividerSpaceMultiplier += Convert.ToInt32(settings.showLayers) * 2; // each label contains a space at each side
-            dividerSpaceMultiplier += Convert.ToInt32(settings.showStaticObjects) * 2;
-            dividerSpaceMultiplier += Convert.ToInt32(settings.showTags) * 2;
+            dividerSpaceMultiplier += Convert.ToInt32(_settings.showLayers) * 2; // each label contains a space at each side
+            dividerSpaceMultiplier += Convert.ToInt32(_settings.showStaticObjects) * 2;
+            dividerSpaceMultiplier += Convert.ToInt32(_settings.showTags) * 2;
 
             float labelWdithMultiplier = 0;
-            labelWdithMultiplier += Convert.ToInt32(settings.showLayers); // each label contains a space at each side
-            labelWdithMultiplier += Convert.ToInt32(settings.showTags);
+            labelWdithMultiplier += Convert.ToInt32(_settings.showLayers); // each label contains a space at each side
+            labelWdithMultiplier += Convert.ToInt32(_settings.showTags);
 
-            Rect allLabelsRect = rect;
-            allLabelsRect.xMin = rect.xMax - (settings.labelWidth * labelWdithMultiplier) - // x pos
-            (settings.showStaticObjects ? staticIndicatorSize.x : 0) - (DividerLineSpaceFromLabel * dividerSpaceMultiplier); // -> indicator width;
-            allLabelsRect.size = new Vector2(settings.labelWidth, allLabelsRect.size.y);
+            var allLabelsRect = rect;
+            allLabelsRect.xMin = rect.xMax - (_settings.labelWidth * labelWdithMultiplier) - // x pos
+            (_settings.showStaticObjects ? StaticIndicatorSize.x : 0) - (DividerLineSpaceFromLabel * dividerSpaceMultiplier); // -> indicator width;
+            allLabelsRect.size = new Vector2(_settings.labelWidth, allLabelsRect.size.y);
             return allLabelsRect.xMin;
         }
 
         private static void DrawGroupHeader( Rect rect, string goName, MyHierarchyGroup groupHeader, bool isActive )
         {
-            GUIStyle groupLabelStyle = new GUIStyle(EditorStyles.label);
-            groupLabelStyle.normal.textColor = groupHeader.fontColor;
-            groupLabelStyle.fontStyle = settings.groupFontStyle;
+            var groupLabelStyle = new GUIStyle(EditorStyles.label)
+            {
+                normal =
+                {
+                    textColor = groupHeader.fontColor
+                },
+                fontStyle = _settings.groupFontStyle
+            };
 
-            Rect headerRect = rect;
-            headerRect.xMax = settings.showLabelsOnGroup ? GetAllLabelsXMin(rect) : rect.xMax;
+            var headerRect = rect;
+            headerRect.xMax = _settings.showLabelsOnGroup ? GetAllLabelsXMin(rect) : rect.xMax;
             headerRect.xMin = rect.xMin + GameObjectHierarchyItemIconWidth + IconToGroupHeaderLabelSpace;
 
 
             EditorGUI.DrawRect(headerRect, groupHeader.backgroundColor);
             EditorGUI.LabelField(headerRect, goName, groupLabelStyle);
 
-            if (!isActive){
-                Rect inactiveRect = headerRect;
-                EditorGUI.DrawRect(inactiveRect, inactiveObjectColorTint);
-            }
+            if (isActive) return;
+            var inactiveRect = headerRect;
+            EditorGUI.DrawRect(inactiveRect, InactiveObjectColorTint);
         }
 
         private static void DrawHeader(MyHierarchyHeader header, Rect rect, Transform goTransform)
         {
-            GUIStyle headerStyle = new GUIStyle(EditorStyles.label);
-            headerStyle.normal.textColor = header.fontColor;
-            headerStyle.alignment = settings.headerAlignment.ToTextAnchor();
-            headerStyle.fontStyle = settings.headerFontStyle;
+            var headerStyle = new GUIStyle(EditorStyles.label)
+            {
+                normal =
+                {
+                    textColor = header.fontColor
+                },
+                alignment = _settings.headerAlignment.ToTextAnchor(),
+                fontStyle = _settings.headerFontStyle
+            };
 
             rect.xMin = SceneVisibilityAndPickabilityControlXMax;
-            rect.xMax = rect.xMax + HierarchyItemRectRightMargin;
+            rect.xMax += HierarchyItemRectRightMargin;
 
             if (goTransform.childCount > 0 || goTransform.parent != null)
             {
@@ -242,10 +244,10 @@ namespace MyHierarchy
                
                 if (goTransform.childCount > 0)  {
                     EditorGUI.LabelField(rect, "Headers shouldn't have child gameobjects".ToUpper() , headerStyle);
-                    Debug.LogError($"My Hierarychy Header's shouldn't have child gameobjects!, Unparent all gameobjects from ({goTransform.name})");
+                    Debug.LogError($"My Hierarchy Header's shouldn't have child gameobjects!, Unparent all gameobjects from ({goTransform.name})");
                 } else {
                     EditorGUI.LabelField(rect, "Headers shouldn't be parented".ToUpper() , headerStyle);
-                    Debug.LogError($"My Hierarychy Header's shouldn't parented to other gameobject, Unparent from ({goTransform.name})");
+                    Debug.LogError($"My Hierarchy Header's shouldn't parented to other gameobject, Unparent from ({goTransform.name})");
                 }
             } else {
                 EditorGUI.DrawRect(rect, header.backgroundColor);
@@ -290,11 +292,11 @@ namespace MyHierarchy
 
         private static void DrawIsStaticLabel(Rect rect, bool isStatic) 
         {   
-            Rect indicatorRect = rect;
-            indicatorRect.xMin = rect.xMax - staticIndicatorSize.x - DividerLineSpaceFromLabel; // x pos
+            var indicatorRect = rect;
+            indicatorRect.xMin = rect.xMax - StaticIndicatorSize.x - DividerLineSpaceFromLabel; // x pos
             indicatorRect.yMin = rect.yMin +  ( (rect.yMax - rect.yMin) / 4 ); 
             // y pos -> / 4 because we need to position the start of drawing of the box not from the center which would be / 2 but at 1/4 of the way, just before the center
-            indicatorRect.size = staticIndicatorSize;
+            indicatorRect.size = StaticIndicatorSize;
 
             EditorGUI.DrawRect(indicatorRect, isStatic ? StaticColor : NonStaticColor);
             DrawLineDivider(indicatorRect.x, rect);
@@ -303,12 +305,12 @@ namespace MyHierarchy
         
         private static void DrawLayerLabel(Rect rect, LayerMask layer)
         {
-            string layerString = LayerMask.LayerToName(layer);
-            Rect layerRect = rect;
+            var layerString = LayerMask.LayerToName(layer);
+            var layerRect = rect;
 
-            layerRect.xMin = rect.xMax - settings.labelWidth - // x pos
-            (settings.showStaticObjects ? staticIndicatorSize.x  : 0) - (DividerLineSpaceFromLabel * (settings.showStaticObjects ? 3 : 1)); // -> indicator width;
-            layerRect.size = new Vector2(settings.labelWidth, layerRect.size.y);
+            layerRect.xMin = rect.xMax - _settings.labelWidth - // x pos
+            (_settings.showStaticObjects ? StaticIndicatorSize.x  : 0) - (DividerLineSpaceFromLabel * (_settings.showStaticObjects ? 3 : 1)); // -> indicator width;
+            layerRect.size = new Vector2(_settings.labelWidth, layerRect.size.y);
 
             EditorGUI.LabelField(layerRect, layerString, new GUIStyle(EditorStyles.label));
             DrawLineDivider(layerRect.xMin, rect);
@@ -317,13 +319,13 @@ namespace MyHierarchy
         private static void DrawTagLabel(Rect rect, string tag)
         {
             float dividerSpaceMultiplier = 1;
-            dividerSpaceMultiplier += Convert.ToInt32(settings.showLayers) * 2; // each label contains a space at each side
-            dividerSpaceMultiplier += Convert.ToInt32(settings.showStaticObjects) * 2;
+            dividerSpaceMultiplier += Convert.ToInt32(_settings.showLayers) * 2; // each label contains a space at each side
+            dividerSpaceMultiplier += Convert.ToInt32(_settings.showStaticObjects) * 2;
 
-            Rect tagRect = rect;
-            tagRect.xMin = rect.xMax - (settings.labelWidth * (settings.showLayers ? 2 : 1)) - // x pos
-            (settings.showStaticObjects ? staticIndicatorSize.x : 0) - (DividerLineSpaceFromLabel * dividerSpaceMultiplier); // -> indicator width;
-            tagRect.size = new Vector2(settings.labelWidth, tagRect.size.y);
+            var tagRect = rect;
+            tagRect.xMin = rect.xMax - (_settings.labelWidth * (_settings.showLayers ? 2 : 1)) - // x pos
+            (_settings.showStaticObjects ? StaticIndicatorSize.x : 0) - (DividerLineSpaceFromLabel * dividerSpaceMultiplier); // -> indicator width;
+            tagRect.size = new Vector2(_settings.labelWidth, tagRect.size.y);
 
             EditorGUI.LabelField(tagRect, tag, new GUIStyle(EditorStyles.label));
             DrawLineDivider(tagRect.xMin, rect);
@@ -331,55 +333,55 @@ namespace MyHierarchy
 
         private static void DrawDepth(Rect rect, Transform goTransoform) // draws the number on how deep the gameobject in the hierarchy 
         {
-            if (!settings.showDepth && !settings.showRelationshipLines)
+            if (!_settings.showDepth && !_settings.showRelationshipLines)
                 return;
 
-            float nameXRightPosShift = rect.xMin - HierarchyRootItemXMin; 
-            float shiftCount = nameXRightPosShift / HierarchyItemXShiftPerDepth;
+            var nameXRightPosShift = rect.xMin - HierarchyRootItemXMin; 
+            var shiftCount = nameXRightPosShift / HierarchyItemXShiftPerDepth;
 
-            if (IsCurrentlyDrawingSelectedObject)
-                SelectedObjectItemDepth = (int)shiftCount;
+            if (_isCurrentlyDrawingSelectedObject)
+                _selectedObjectItemDepth = (int)shiftCount;
 
-            if (shiftCount > 1 && settings.showRelationshipLines)
+            if (shiftCount > 1 && _settings.showRelationshipLines)
                 DrawSiblingConnectionLines(rect, (int)shiftCount, goTransoform);
 
-            if (!settings.showDepth)
+            if (!_settings.showDepth)
                 return;
 
-            Rect depthRect = rect;
+            var depthRect = rect;
             depthRect.xMin = SceneVisibilityAndPickabilityControlXMax + DepthNumberMargin;
-            EditorGUI.LabelField(depthRect, shiftCount.ToString(), new GUIStyle(EditorStyles.boldLabel));
+            EditorGUI.LabelField(depthRect, shiftCount.ToString(CultureInfo.CurrentCulture), new GUIStyle(EditorStyles.boldLabel));
         }
 
         private static void DrawComponents(Rect rect, Transform goTransform, bool isGroupHeader)
         {
-            GUIStyle textStyle = EditorStyles.label;
-            Vector2 textSize = textStyle.CalcSize(new GUIContent(goTransform.name));
+            var textStyle = EditorStyles.label;
+            var textSize = textStyle.CalcSize(new GUIContent(goTransform.name));
 
-            Component[] components = goTransform.GetComponents(typeof(Component));
-            float shift = GetAllLabelsXMin(rect); 
-            bool customComponentDisplayed = false; // only display iconless components once
+            var components = goTransform.GetComponents(typeof(Component));
+            var shift = GetAllLabelsXMin(rect); 
+            var customComponentDisplayed = false; // only display iconless components once
 
-            for (int i = 0; i < components.Length; i++)
+            foreach (var t in components)
             {
                 if (components.Length <= 1) // if there is one component in the object just don't render any icon we know it's either transform or rect transform
                     break;
 
-                if (components[i] == null) {
+                if (t == null) {
                     Debug.LogWarning($"Missing/Invalid script found at Gameobject ({goTransform.name}), Skipped drawing it's icon");
                     continue;
                 }
 
-                Type componentType = components[i].GetType();
+                var componentType = t.GetType();
                 
                 // Do not render transform or Rect Transform icons since we they are not that important to know
                 if (componentType == typeof(Transform) || componentType == typeof(RectTransform))
                     continue;
 
-                Texture componentIcon = EditorGUIUtility.ObjectContent(null, componentType).image;
+                var componentIcon = EditorGUIUtility.ObjectContent(null, componentType).image;
 
                 // components that have no icons are like custom mono scripts that uh....has no icon assigned
-                if (settings.hideIconlessComponents && componentIcon == null)
+                if (_settings.hideIconlessComponents && componentIcon == null)
                     continue;
 
                 shift -= 20; // shift the position of the icon to the left from right 
@@ -392,7 +394,7 @@ namespace MyHierarchy
                     continue; // skip drawing more than 1 custom component
                 }
 
-                Rect componentRect = rect;
+                var componentRect = rect;
                 componentRect.xMin = shift;
                 componentRect.size = new Vector2(rect.size.y, rect.size.y);
 
@@ -421,12 +423,12 @@ namespace MyHierarchy
 
         private static void DrawVerticalLine(Rect rect, Color color)
         {
-            Rect lineRect = rect;
+            var lineRect = rect;
             lineRect.xMin -= ParentToChildLineXPosLeftShift;
             lineRect.size = new Vector2(ParentToChildLineHeight, rect.size.y - ParentToChildLineLength);
 
             // extends the line further down to connect this item to it's sibling item gameobect
-            if (HasNextSibling)
+            if (_hasNextSibling)
                 lineRect.yMax = rect.yMax;
 
             EditorGUI.DrawRect(lineRect, color);
@@ -434,10 +436,10 @@ namespace MyHierarchy
 
         private static void DrawSiblingConnectionLines(Rect rect, int shiftCOunt, Transform goTransform)
         {
-            Transform grandParent = goTransform.transform.parent.parent;
-            Transform parent = goTransform.transform.parent;
+            var grandParent = goTransform.transform.parent.parent;
+            var parent = goTransform.transform.parent;
 
-            for (int i = 1; i < shiftCOunt; i++)
+            for (var i = 1; i < shiftCOunt; i++)
             {
                 if (grandParent == null)
                     continue;
@@ -445,7 +447,7 @@ namespace MyHierarchy
                 if (parent == null)
                     continue;
 
-                bool isNotLastIndex = parent.GetSiblingIndex() != grandParent.childCount-1;
+                var isNotLastIndex = parent.GetSiblingIndex() != grandParent.childCount-1;
                 // exclude rendering lines from children that is an only child or at the last index of the child group since they got no sibling to connect
                 // the line to
                 // NOTE: only draws the connecting lines from first to last child
@@ -454,13 +456,13 @@ namespace MyHierarchy
                 if ( grandParent.childCount > 1 && isNotLastIndex )
                 {
                     // Calculate positioning and sizing values
-                    Rect lineRect = rect;
+                    var lineRect = rect;
                     lineRect.xMin -= ParentToChildLineXPosLeftShift + SameParentLineLeftShift * i;
                     lineRect.yMin = rect.yMin + SameParentLineYMargin;
                     lineRect.yMax = rect.yMax - SameParentLineYMargin;
                     lineRect.size = new Vector2(ParentToChildLineHeight, lineRect.size.y);
 
-                    int selectedObjectDepth_Reverse = shiftCOunt - SelectedObjectItemDepth;
+                    var selectedObjectDepthReverse = shiftCOunt - _selectedObjectItemDepth;
 
                     // Draws all the connecting lines of parent to child (even the imprecise ones that leads to nothing)
                     // EditorGUI.DrawRect(lineRect, SameParentLineColor_InActive ); 
@@ -476,11 +478,11 @@ namespace MyHierarchy
                     //     );
                     // }
 
-                    if (i == selectedObjectDepth_Reverse && IsSiblingOfSelectedObject && settings.highlightSelectedSiblings)
+                    if (i == selectedObjectDepthReverse && _isSiblingOfSelectedObject && _settings.highlightSelectedSiblings)
                     {
-                        EditorGUI.DrawRect( lineRect, SameParentLineColor_Active);
+                        EditorGUI.DrawRect( lineRect, SameParentLineColorActive);
                     } else {
-                        EditorGUI.DrawRect( lineRect, SameParentLineColor_InActive ); 
+                        EditorGUI.DrawRect( lineRect, SameParentLineColorInActive ); 
                     }
                 }
                     
@@ -494,12 +496,12 @@ namespace MyHierarchy
 
         public static T GetAsset_SO<T>(string soClassName, string soFileName) where T : ScriptableObject
         {
-            string[] guid = AssetDatabase.FindAssets( $"t:{soClassName} {soFileName}" );
+            var guid = AssetDatabase.FindAssets( $"t:{soClassName} {soFileName}" );
 
             if (guid.Length <= 0) 
                 throw new Exception($"Asset ({soFileName}) with a type of ({soClassName}) NOT FOUND");
   
-            string assetPath = AssetDatabase.GUIDToAssetPath(guid[0]);
+            var assetPath = AssetDatabase.GUIDToAssetPath(guid[0]);
             return AssetDatabase.LoadAssetAtPath<T>( assetPath );
         } 
     }
