@@ -9,7 +9,7 @@ on:
 env:
   packageName: "com.inf.my-hierarchy"
   packagePath: "Packages/com.inf.my-hierarchy"
-  packageFileName: "My Hierarchy"
+  packageFileName: "My-Hierarchy"
   packageReleaseName: "Bleeding Edge"
 
 permissions:
@@ -43,7 +43,7 @@ jobs:
       - name: Set Environment Variables
         if: ${{ steps.checkReleaseTag.outputs.exists == 'false' }}
         run: |
-          echo "zipFile=${{ env.packageFileName }}_v${{ steps.version.outputs.value }}_VPM.zip" >> $GITHUB_ENV
+          echo "zipFile=${{ env.packageFileName }}_v${{ steps.version.outputs.value }}_VPM".zip >> $GITHUB_ENV
           echo "unityPackage=${{ env.packageFileName }}_v${{ steps.version.outputs.value }}.unitypackage" >> $GITHUB_ENV
     
       - name: Set ZIP Url
@@ -75,19 +75,8 @@ jobs:
           filename: "../../${{env.zipFile}}" # make the zip file two directories up, since we start two directories in above
           exclusions: "*.git* *.github* .gitignore Packages/"
           
-      - name: Generate meta files list
+      - run: find "${{env.packagePath}}" -name \*.meta >> metaList
         if: ${{ steps.checkReleaseTag.outputs.exists == 'false' }}
-        run: find "${{env.packagePath}}" -name \*.meta >> metaList
-          
-      - name: Debug paths
-        if: ${{ steps.checkReleaseTag.outputs.exists == 'false' }}
-        run: |
-          pwd
-          ls -la
-          echo "Meta files content:"
-          cat metaList
-          echo "Package path contents:"
-          ls -la "${{env.packagePath}}"
           
       - name: Create UnityPackage
         if: ${{ steps.checkReleaseTag.outputs.exists == 'false' }}
@@ -95,17 +84,6 @@ jobs:
         with:
           package-path: ${{ env.unityPackage }}
           include-files: metaList
-          
-      - name: Verify UnityPackage
-        if: ${{ steps.checkReleaseTag.outputs.exists == 'false' }}
-        run: |
-          ls -la
-          if [ ! -f "${{ env.unityPackage }}" ]; then
-            echo "ERROR: Unity package file not found at expected path: ${{ env.unityPackage }}"
-            exit 1
-          else
-            echo "Unity package file successfully created at: ${{ env.unityPackage }}"
-          fi
           
       - name: Add Icon to UnityPackage
         if: ${{ steps.checkReleaseTag.outputs.exists == 'false' }}
