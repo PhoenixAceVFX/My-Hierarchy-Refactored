@@ -2,7 +2,8 @@
     "name": "com.inf.my-hierarchy.editor",
     "rootNamespace": "",
     "references": [
-        "GUID:acf8c9d850a3cf34d93b95eb0cb24c46"
+        "GUID:acf8c9d850a3cf34d93b95eb0cb24c46",
+        "com.inf.my-hierarchy.runtime"
     ],
     "includePlatforms": [
         "Editor"
