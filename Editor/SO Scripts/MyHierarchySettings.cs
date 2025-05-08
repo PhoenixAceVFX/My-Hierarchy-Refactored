@@ -9,7 +9,7 @@ using UnityEngine;
 
 namespace Editor.SO_Scripts
 {
-    // [CreateAssetMenu(fileName = "My Hierarchy Settings", menuName = "My Hierarchy Settings", order = 0)]
+    [CreateAssetMenu(fileName = "My Hierarchy Settings", menuName = "My Hierarchy Settings", order = 0)]
     public class MyHierarchySettings : ScriptableObject {
         [SerializeField, HideInInspector] public bool showLayers;
         [SerializeField, HideInInspector] public bool showTags;
